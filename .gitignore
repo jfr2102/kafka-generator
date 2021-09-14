@@ -1,0 +1,6 @@
+/target
+*.sh
+/.idea
+.settings
+.classpath
+.project
