@@ -1,5 +1,7 @@
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import java.io.IOException;
+import java.nio.file.*;
 
 public class KafkaCallback implements Callback {
     int index;
@@ -19,7 +21,15 @@ public class KafkaCallback implements Callback {
         if (exception != null) {
             exception.printStackTrace();
         } else {
-            System.out.println("index:" + index + "partion:" + partition + " city:" + city + " data: " + data + "kafkatimestamp:" + metadata.timestamp());
+            //System.out.println("index:" + index + "; partion:" + partition + "; city:" + city + "; data: " + data + "; kafkatimestamp:" + metadata.timestamp());
+            String csv_line = index + "; " + partition + "; " + city + "; " + data + "; " + metadata.timestamp() + ";\n";
+            try {
+                Files.write(Paths.get("produceroutput.csv"),csv_line.getBytes(), StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                //exception handling left as an exercise for the reader
+            }
+
+
         }
     }
 }

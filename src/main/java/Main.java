@@ -11,7 +11,7 @@ public class Main {
         // Docker container id/IP if not running from docker container in the overlay network (here running it on the kafka container itself -> localhost )
         props.put("bootstrap.servers", "localhost:9092");
         props.put("acks", "all");
-        props.put("retries", 0);
+        props.put("retries", 100);
         //props.put("linger.ms", 1);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -19,13 +19,12 @@ public class Main {
 
         int partition = 0;
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             long data = (long) (Math.random() * (100));
             Random r = new Random();
             String city = city_names[r.nextInt(city_names.length)];
             KafkaCallback callback = new KafkaCallback(i, partition, city, data);
             producer.send(new ProducerRecord<String, String>("mytopic", partition, (Integer.toString(i)), "{\"venue\":{\"country\": \"US\", \"city\": \"" + city + "\" }, \"sensordata\":\"" + data + "\"}"), callback);
-            System.out.println("i:" + i + "partion:" + partition + " city:" + city + " data: " + data);
             partition = (partition + 1) % 2;
         }
         producer.close();
