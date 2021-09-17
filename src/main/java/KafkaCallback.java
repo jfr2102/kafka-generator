@@ -8,12 +8,14 @@ public class KafkaCallback implements Callback {
     int partition;
     String city;
     long data;
+    long localTimestamp;
 
-    public KafkaCallback(int index, int partition, String city, long data) {
+    public KafkaCallback(int index, int partition, String city, long data, long localTimestamp) {
         this.index = index;
         this.partition = partition;
         this.city = city;
         this.data = data;
+        this.localTimestamp = localTimestamp;
     }
 
     @Override
@@ -21,15 +23,13 @@ public class KafkaCallback implements Callback {
         if (exception != null) {
             exception.printStackTrace();
         } else {
-            //System.out.println("index:" + index + "; partion:" + partition + "; city:" + city + "; data: " + data + "; kafkatimestamp:" + metadata.timestamp());
-            String csv_line = index + "; " + partition + "; " + city + "; " + data + "; " + metadata.timestamp() + ";\n";
+            String csv_line = index + "; " + partition + "; " + city + "; " + data + "; " + metadata.timestamp() + "; "
+                    + localTimestamp + "\n";
             try {
-                Files.write(Paths.get("produceroutput.csv"),csv_line.getBytes(), StandardOpenOption.APPEND);
+                Files.write(Paths.get("produceroutput.csv"), csv_line.getBytes(), StandardOpenOption.APPEND);
             } catch (IOException e) {
-                //exception handling left as an exercise for the reader
+                // exception handling left as an exercise for the reader
             }
-
-
         }
     }
 }

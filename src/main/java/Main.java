@@ -23,7 +23,8 @@ public class Main {
             long data = (long) (Math.random() * (100));
             Random r = new Random();
             String city = city_names[r.nextInt(city_names.length)];
-            KafkaCallback callback = new KafkaCallback(i, partition, city, data);
+            long localTimestamp = System.currentTimeMillis(); //.nanoTime(); maybe not good to compare as we investigate everything else in millis
+            KafkaCallback callback = new KafkaCallback(i, partition, city, data, localTimestamp);
             producer.send(new ProducerRecord<String, String>("mytopic", partition, (Integer.toString(i)), "{\"venue\":{\"country\": \"US\", \"city\": \"" + city + "\" }, \"sensordata\":\"" + data + "\"}"), callback);
             partition = (partition + 1) % 2;
         }
