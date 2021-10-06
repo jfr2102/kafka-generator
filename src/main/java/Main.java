@@ -74,12 +74,12 @@ public class Main {
 
         int partition = 0;
 
-        sleep(5000);
-        for (int i = 0; i <= MESSAGE_COUNT + 1; i++) {
-            if (i % 100 == 0) {
-                sleep(5000);
+        sleep(1000);
+        for (int i = 0; i <= MESSAGE_COUNT + 2; i++) {
+            if (i % 1000 == 0) {
+                sleep(1000);
             }
-            if (i == MESSAGE_COUNT) {
+            if (i == (MESSAGE_COUNT -1)) {
                 sleep(10000);
             }
             // partition 1 should on avg be 2 x partition 0
