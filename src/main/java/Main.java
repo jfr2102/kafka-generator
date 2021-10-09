@@ -10,7 +10,7 @@ import java.util.Random;
 public class Main {
     public final static int MESSAGE_COUNT = 10000;
     public static void main(String[] args) {
-        final String[] city_names = new String[]{"Aberdeen", "Abilene", "Akron", "Albany", "Albuquerque",
+        final String[] city_names_full = new String[]{"Aberdeen", "Abilene", "Akron", "Albany", "Albuquerque",
                 "Alexandria", "Allentown", "Amarillo", "Anaheim", "Anchorage", "Ann Arbor", "Antioch", "Apple Valley",
                 "Appleton", "Arlington", "Arvada", "Asheville", "Athens", "Atlanta", "Atlantic City", "Augusta",
                 "Aurora", "Austin", "Bakersfield", "Baltimore", "Barnstable", "Baton Rouge", "Beaumont", "Bel Air",
@@ -61,6 +61,9 @@ public class Main {
                 "Virginia Beach", "Visalia", "Waco", "Warren", "Washington", "Waterbury", "Waterloo", "West Covina",
                 "West Valley City", "Westminster", "Wichita", "Wilmington", "Winston", "Winter Haven", "Worcester",
                 "Yakima", "Yonkers", "York", "Youngstown"};
+
+        final String[] city_names = new String[]{"Baltimore", "Barnstable", "Baton Rouge", "Beaumont", "Bel Air"};
+
         Properties props = new Properties();
         // Docker container id/IP if not running from docker container in the overlay
         // network (here running it on the kafka container itself -> localhost )
@@ -75,11 +78,11 @@ public class Main {
         int partition = 0;
 
         sleep(1000);
-        for (int i = 0; i <= MESSAGE_COUNT + 2; i++) {
+        for (int i = 0; i < MESSAGE_COUNT + 2; i++) {
             if (i % 1000 == 0) {
                 sleep(1000);
             }
-            if (i == (MESSAGE_COUNT -1)) {
+            if ( i == MESSAGE_COUNT ) {
                 sleep(10000);
             }
             // partition 1 should on avg be 2 x partition 0
