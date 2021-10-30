@@ -1,13 +1,12 @@
 import org.apache.kafka.clients.producer.*;
-import org.slf4j.helpers.Util;
-
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Properties;
 import java.util.Random;
+import java.io.IOException;
+import java.nio.file.*;
+
 
 public class Main {
+    static final  int PARTITION_COUNT = 6;
     static final String[] city_names_full = new String[]{"Aberdeen", "Abilene", "Akron", "Albany", "Albuquerque",
             "Alexandria", "Allentown", "Amarillo", "Anaheim", "Anchorage", "Ann Arbor", "Antioch", "Apple Valley",
             "Appleton", "Arlington", "Arvada", "Asheville", "Athens", "Atlanta", "Atlantic City", "Augusta",
@@ -63,8 +62,18 @@ public class Main {
     static final String[] city_names = new String[]{"Baltimore", "Barnstable", "Baton Rouge", "Beaumont", "Bel Air"};
 
     public static void main(String[] args) {
-       // send_n_messages(10000, 1000, 10000, 1000);
-        throughputTest();
+        int arguments = args.length;
+        if(arguments == 0){
+            System.out.println("Running Default benchmark: 10.000.000, 50, 10.000, 5000");
+        failureBenchmark(10_000_000, 50, 10_000, 5000);
+        } else if(args[0].equals("-benchmark") && arguments==5){
+            failureBenchmark(Long.parseLong(args[1]), Long.parseLong(args[2]), Long.parseLong(args[3]), Long.parseLong(args[4]));
+        } else if(args[0].equals("-send") && arguments==5){
+            send_n_messages(Long.parseLong(args[1]), Long.parseLong(args[2]), Long.parseLong(args[3]), Long.parseLong(args[4]));
+        } else{
+            System.out.println("Usage: -benchmark | - send  messag_count sleep_short sleep_long sleep_factor");
+        }
+
     }
 
     public static void send_n_messages(long msg_count, long sleep_short, long sleep_long, long sleep_factor){
@@ -74,12 +83,12 @@ public class Main {
         props.put("bootstrap.servers", "localhost:9092");
         props.put("acks", "all");
         props.put("retries", 10);
-        props.put("linger.ms", 1);
+        //props.put("linger.ms", 1);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         Producer<String, String> producer = new KafkaProducer<>(props);
         int partition = 0;
-        for (int i = 0; i < msg_count + 2; i++) {
+        for (int i = 0; i < msg_count + PARTITION_COUNT; i++) {
             if (i % sleep_factor == 0) {
                 sleep(sleep_short);
             }
@@ -96,30 +105,50 @@ public class Main {
             producer.send(new ProducerRecord<String, String>("mytopic", partition, (Integer.toString(i)),
                             "{\"venue\":{\"country\": \"US\", \"city\": \"" + city + "\" }, \"sensordata\":\"" + data + "\"}"),
                     callback);
-            partition = (partition + 1) % 2;
+            partition = (partition + 1) % PARTITION_COUNT;
         }
         producer.close();
-        sleep(60000 * 2);
+
+        String line = "msg_count: " + msg_count + "; sleep_short: "+ sleep_short + "; sleep_long: " + sleep_long + "; sleep_factor: " + sleep_factor + "\n";
+        try {
+            Files.write(Paths.get("produceroutput.csv"), line.getBytes(), StandardOpenOption.APPEND);
+        } catch (IOException e) {
+        }
+
+        sleep(60000);
     }
 
     public static void throughputTest(){
+        send_n_messages(500000 * 20,50, 10000, 8500 );
+        send_n_messages(500000 * 40, 50, 10000, 20500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 22500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 24500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 26500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 28500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 29500 ); 
+        send_n_messages(500000 * 40, 50, 10000, 30500 ); //all working now, but seems like there is backpressure (increasing latencies)
+    }
 
-        send_n_messages(500000 * 4, 500, 10000, 5000);
-        send_n_messages(500000 * 4, 250, 10000, 5000); //works
-        send_n_messages(500000 * 4, 125, 10000, 5000); //works
-        send_n_messages(500000 * 4, 75, 10000, 5000); //works
-        //send_n_messages(500000 * 4, 75, 10000, 7500);
-       // send_n_messages(500000 * 4, 50, 10000, 7500);
-        //send_n_messages(500000 * 4, 25, 10000, 7500);
-        //send_n_messages(500000 * 4, 50, 10000, 5000);
-
-
+    public static void failureBenchmark(long msg_count, long sleep_short, long sleep_long, long sleep_factor){
+        //warmup
+        send_n_messages(1_000_000 * 5, 50, 10000, 5000);
+        //first run
+        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor);
+        //second run
+        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor);
     }
     public static void sleep(long millies){
         try{
             Thread.sleep(millies);
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    public static void send_parallel(int thread_count){
+        for(int i=0; i < thread_count; i++){
+            Thread thread = new Thread(new MultiThreadProducer());
+            thread.start();
         }
     }
 }
