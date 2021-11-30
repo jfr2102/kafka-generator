@@ -22,7 +22,7 @@ public class KafkaCallback implements Callback {
     public void onCompletion(RecordMetadata metadata, Exception exception) {
         if (exception != null) {
             exception.printStackTrace();
-        } else {
+        } else {/*
             String csv_line = index + "; " + partition + "; " + city + "; " + data + "; " + metadata.timestamp() + "; "
                     + localTimestamp + "\n";
             try {
@@ -30,6 +30,8 @@ public class KafkaCallback implements Callback {
             } catch (IOException e) {
                 // exception handling left as an exercise for the reader
             }
+        */
         }
+
     }
 }

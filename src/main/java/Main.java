@@ -6,6 +6,7 @@ import java.nio.file.*;
 
 
 public class Main {
+    private static int i = 0;
     static final  int PARTITION_COUNT = 6;
     static final String[] city_names_full = new String[]{"Aberdeen", "Abilene", "Akron", "Albany", "Albuquerque",
             "Alexandria", "Allentown", "Amarillo", "Anaheim", "Anchorage", "Ann Arbor", "Antioch", "Apple Valley",
@@ -69,14 +70,22 @@ public class Main {
         } else if(args[0].equals("-benchmark") && arguments==5){
             failureBenchmark(Long.parseLong(args[1]), Long.parseLong(args[2]), Long.parseLong(args[3]), Long.parseLong(args[4]));
         } else if(args[0].equals("-send") && arguments==5){
-            send_n_messages(Long.parseLong(args[1]), Long.parseLong(args[2]), Long.parseLong(args[3]), Long.parseLong(args[4]));
+            send_n_messages(Long.parseLong(args[1]), Long.parseLong(args[2]), Long.parseLong(args[3]), Long.parseLong(args[4]), "send_n");
+        } else if(args[0].equals("-throughput") && arguments==1){
+           throughputTest();
         } else{
             System.out.println("Usage: -benchmark | - send  messag_count sleep_short sleep_long sleep_factor");
         }
 
     }
 
-    public static void send_n_messages(long msg_count, long sleep_short, long sleep_long, long sleep_factor){
+    public static void send_n_messages(long msg_count, long sleep_short, long sleep_long, long sleep_factor, String note){
+        String line = msg_count + ";" + sleep_short+ ";" + sleep_long + ";" + sleep_factor + ";" + note + ";" + System.currentTimeMillis()+"\n";
+        try {
+            Files.write(Paths.get("produceroutput.csv"), line.getBytes(), StandardOpenOption.APPEND);
+        } catch (IOException e) {
+        }
+
         Properties props = new Properties();
         // Docker container id/IP if not running from docker container in the overlay
         // network (here running it on the kafka container itself -> localhost )
@@ -103,39 +112,43 @@ public class Main {
             // investigate everything else in millis
             KafkaCallback callback = new KafkaCallback(i, partition, city, data, localTimestamp);
             producer.send(new ProducerRecord<String, String>("mytopic", partition, (Integer.toString(i)),
-                            "{\"venue\":{\"country\": \"US\", \"city\": \"" + city + "\" }, \"sensordata\":\"" + data + "\"}"),
+                            "{\"venue\":{\"country\": \"US\", \"city\": \"" + city + "\" }, \"sensordata\":\"" + data + "\", \"note\": \"" + note + "\"}"),
                     callback);
             partition = (partition + 1) % PARTITION_COUNT;
         }
         producer.close();
-
-        String line = "msg_count: " + msg_count + "; sleep_short: "+ sleep_short + "; sleep_long: " + sleep_long + "; sleep_factor: " + sleep_factor + "\n";
-        try {
-            Files.write(Paths.get("produceroutput.csv"), line.getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-        }
-
+        i++;
         sleep(60000);
     }
 
     public static void throughputTest(){
-        send_n_messages(500000 * 20,50, 10000, 8500 );
-        send_n_messages(500000 * 40, 50, 10000, 20500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 22500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 24500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 26500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 28500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 29500 ); 
-        send_n_messages(500000 * 40, 50, 10000, 30500 ); //all working now, but seems like there is backpressure (increasing latencies)
+        String note = "throughput_test";
+        // send_n_messages(500_000 * 2, 25, 10000, 250, note + "_" + i); 
+        // send_n_messages(500_000 * 4, 25, 10000, 500, note + "_" + i); 
+        // send_n_messages(500_000 * 6, 25, 10000, 1000, note + "_" + i);
+        // send_n_messages(500_000 * 12, 25, 10000, 2000, note + "_" + i); 
+        // send_n_messages(500_000 * 24, 25, 10000, 4000, note + "_" + i); 
+        // send_n_messages(500_000 * 36, 25, 10000, 6000, note + "_" + i); 
+        // send_n_messages(500_000 * 48, 25, 10000, 8000, note + "_" + i);
+
+        send_n_messages(500_000 * 12, 25, 10000, 2000, note + "_" + i);
+        send_n_messages(500_000 * 15, 25, 10000, 2500, note + "_" + i);
+        send_n_messages(500_000 * 18, 25, 10000, 3000, note + "_" + i);
+        send_n_messages(500_000 * 21, 25, 10000, 3500, note + "_" + i); 
+        send_n_messages(500_000 * 24, 25, 10000, 4000, note + "_" + i);
+        send_n_messages(500_000 * 27, 25, 10000, 4500, note + "_" + i);
+        send_n_messages(500_000 * 30, 25, 10000, 5000, note + "_" + i);
+        send_n_messages(500_000 * 33, 25, 10000, 5500, note + "_" + i); 
+        send_n_messages(500_000 * 36, 25, 10000, 6000, note + "_" + i); 
     }
 
     public static void failureBenchmark(long msg_count, long sleep_short, long sleep_long, long sleep_factor){
         //warmup
-        send_n_messages(1_000_000 * 5, 50, 10000, 5000);
+        send_n_messages(500_000 * 5, 50, 10000, 2500, "warmup");
         //first run
-        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor);
+        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor, "check");
         //second run
-        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor);
+        send_n_messages(msg_count, sleep_short, sleep_long, sleep_factor, "benchmark");
     }
     public static void sleep(long millies){
         try{
